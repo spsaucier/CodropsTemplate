@@ -1,28 +1,30 @@
 <!-- Main image 580x315 (optional) -->
 
-Today we will be showing the loading of large images and animating them in once they finish loading.
+Today we will demonstrate how to show the loading of large images and reveal the images using custom animations once they are finished loading.
 
-In order to show this loading, we will have to make <a href="#">XHR requests</a> for the images instead of loading them using an img element or as a background. We will also be using <a href="https://github.com/kimmobrunfeldt/progressbar.js">ProgressBar.js</a> to make creating and animating the loaders easier.
+In order to show the image loading process, we will have to make <a href="https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest">XHR requests</a> for the images instead of loading them the conventional way. We will also be using <a href="https://github.com/kimmobrunfeldt/progressbar.js">ProgressBar.js</a> to make creating and animating the loaders easier.
 
 <div class="box-attention">
 	<strong>Attention:</strong> Please keep in mind some of these effects are <strong>highly experimental</strong> and only supported by some modern browsers. Chrome seems to have the best performance for them as of now, FireFox performs the next best.
 </div>
 
-The basic structure of the code is simple. We just need to create some elements, styling them however we want the final images to look, give them all a common class, and then give each a couple custom <a href="#">data-attributes</a> to make them they way we want them. 
+<h2>Basic structure</h2>
 
-The basic image element we'll use is one that looks like the one below. The data-pb-type attribute will be used to determine which loader to use and the data-pb-src will be the image URL for that image.
+The basic structure of the code is simple. We need to create some elements, style them a little, give them a common class, and then use some custom <a href="https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Using_data_attributes">data-attributes</a> to specify which type each one is. 
+
+The one below is an example of all the HTML we need. The pb type attribute will be used to determine which loader to use and the pb src attribute will tell use where to fetch the image from.
 
 <pre class="brush:html"><code>
 &lt;div class="pb" data-pb-type="diagonal" data-pb-src="/img/url.jpg"&gt;
 </code></pre>
 
-The first demo is based on <a href="https://twitter.com/michaelvillar">Michaël Villar's</a> work that can be <a href="http://michaelvillar.s3.amazonaws.com/motion/08-photo-loading/photo-loading.mp4">seen here</a>. This demo makes use of the CSS' <a href="#">clip-path</a> property, which is only supported in Webkit browsers currently. For Firefox we fall back to an SVG <a href="#">SMIL animation</a> and for Internet Explorer we fall back to a plain fade in because it doesn't support either method.
+First off, we need to size the images and do some other setup. Since I want them to maintain their original aspect ratio (I use all 3:2 aspect ratio images) and be fully responsive, I'm going to use something I call <a href="http://stackoverflow.com/a/11017480/2065702">the height:0 padding trick</a>. We also want the image to take up the whole size of the element, so we'll use a value of cover for our background size property. The other thing I'll add is a default fade to be used when the .complete class is added.
 
-First off, we need to size the images and do some other setup. Since I want them to maintain their original aspect ratio of 3:2 and be fully responsive, I'm going to use something I call [the height:0 padding trick](http://stackoverflow.com/a/11017480/2065702). We also want the image to take up the whole space, so we'll have background-size:cover. The other thing I'll add is a default fade to be used when the .complete class is added.
-
-Note that I'm using <a href="#">SCSS</a> to make some of our work easier.
+Note that I'm using <a href="http://sass-lang.com/documentation/file.SCSS_FOR_SASS_USERS.html">SCSS</a> to make some of our work easier.
 
 <pre class="brush:scss"><code>
+$transDur: 0.5s;
+
 .pb {
   /* This sizes each image to make the width 1.5 times bigger than the hegiht. 
      If changed, the positioning some sub elements will need to be changed as well. */
@@ -33,37 +35,186 @@ Note that I'm using <a href="#">SCSS</a> to make some of our work easier.
   background-size:cover;
   position:relative;
   overflow:hidden;
-</code></pre>
 
-<h2>Section headline</h2>
-
-<h3>Sub-section headline</h3>
-
-For code snippets replace < and > with &lt; and &gt;
-
-Example for HTML:
-
-<pre class="brush:html"><code>
-&lt;div class="st-container"&gt;
-&lt;/div&gt;&lt;!-- // st-container --&gt;
-</code></pre>
-
-Example for CSS:
-
-<pre class="brush:css"><code>
-body {
-	background: #000;
+  /* Add a default fade in for every effect */
+  &amp;::after {
+    z-index:0;
+    content:'';
+    position:absolute;
+    top:0;
+    width:100%;
+    height:100%;
+    background-color:inherit;
+  }
+  &amp;.complete::after {
+      opacity:0;
+      transition:$transDur * 2;
+  }
 }
 </code></pre>
 
-Example for JavaScript:
+Now when the loader is done, the image should fade in!
+
+But we don't have a loader yet. We need to create one using some JavaScript. Here's the basic setup for our JS. For the full version, check it out on <a href="#">GitHub</a>.
 
 <pre class="brush:js"><code>
-	...
+// The elements that are the to be used for the image
+var imgElems = document.querySelectorAll(".pb"), 
+    urlCreator = window.URL || window.webkitURL; // For URL creator usage later
+    
+// Add the image loading effect for each element
+[].forEach.call(imgElems, loadImage); 
+
+// Load the image in the way specified by the data attribute
+function loadImage(elem) {
+    // Determine which loader to create
+    var progressBarElem = getProgressBarElem(),
+        imgLoc = elem.getAttribute("data-pb-src");
+
+    // Load the image via XHR so that we can track the progress    
+    var req = new XMLHttpRequest();
+    // Attach the finished load listener
+    req.onload = loadFinished.bind(null, elem);
+    // Attach the progress listener
+    req.onprogress = loading.bind(); // this makes no sense. RL
+    // Actually make the request
+    req.open('GET', imgLoc, true);                              
+    req.responseType = 'blob'; // This must be after the open - FF can't handle do it
+                               // before https://bugzilla.mozilla.org/show_bug.cgi?id=1110761
+    req.send();
+
+    // Determine which progress bar to use given the data attribute and return it
+    function getProgressBarElem() {
+        var type = elem.getAttribute("data-pb-type");
+        
+        // Choose the progress bar type based on the pb-type
+        
+        // Here we determine which ProgressBar type to use based on the given type
+        // and add any other necessary settings. For the sake of brevity, I left it
+        // out here. Look at the source on GitHub for the full version
+
+        return new ProgressBar.TypeSpecifiedAbove(selector);
+    }
+
+    // Update the progress bar with the current value
+    function loading(evt) {
+        if (evt.lengthComputable) {
+            // ProgressBar.js animates using 0.0-1.0 as a range, so we need the 
+            // progress in terms of that
+            progressBarElem.animate(evt.loaded / evt.total);
+        }
+    }
+
+    // Remove the loader when it's done and show the image
+    function loadFinished(elem) {
+        // Create a URL for the given response
+        var imgUrl = urlCreator.createObjectURL(req.response);
+        // Set that URL as the background of the element given
+        elem.style.backgroundImage = 'url(' + imgUrl + ')';
+        
+        // Finish the animation
+        progressBarElem.animate(1, function () {
+            // If it needs to use an SVG animation, use it. Code left out here
+            
+            // Add the "complete" class to show it's done 
+            elem.classList.add("complete");
+        });
+    }
+}
 </code></pre>
 
-Available brushes for code hightlighting: html, scss, css, js, xml, php, mysql or any other if needed: https://highlightjs.org/
+The code above, plus some a tiny bit more to get the diagonal loader looking the way we want to, <a href="http://jsfiddle.net/das04mf6/1/">gets it working!</a>
 
-Images can be a maximum of 890px wide (this will fill all the width of the article).
+Now to add more effects, we simply add a little bit more detection in JavaScript and style them differently in our CSS.
 
+<h2>Creating the first demo loader</h2>
 
+The first demo is based on <a href="https://twitter.com/michaelvillar">Michaël Villar's</a> work that can be <a href="http://michaelvillar.s3.amazonaws.com/motion/08-photo-loading/photo-loading.mp4">seen here</a>. 
+
+This demo makes use of the CSS' <a href="http://tympanus.net/codrops/css_reference/clip-path/">clip-path</a> property, which is <strong>highly experimental</strong> and only supported in Webkit browsers currently. For Firefox we fall back to an SVG SMIL animation and SVG clip path and for Internet Explorer we fall back to a plain fade in because it doesn't support either method. We also fall back to the fade in for Safari because it doesn't semm to support transitioning clip-paths.
+
+The basic concept is simple: show a circular ring loader in the middle of the page, clip away the area outside of that ring, and shrink an element that fills up the inside of the ring.
+
+In browsers that support it (only Chrome currently), we can do the clipping using a circular CSS clip path and the inner circle using a carefully positioned and sized pseudo element. On the completed state, we change the clip path to use a radius of 100% (so it's not clipping anything), fade out the ring loader, and use CSS' <a href="http://tympanus.net/codrops/css_reference/transform/">scale transform</a> on the inner circle, each paired with a <a href="http://tympanus.net/codrops/css_reference/transition/">transition</a> to animate it. All of this (besides the setting of the complete class) can be done in our CSS.
+
+Creating the <a href="https://css-tricks.com/guide-svg-animations-smil/">SMIL</a> fallback for FireFox is a bit more complicated. The first thing to note is that we have to use a background image URL to point to an SVG with the clip path desired. But, since we will want to use the same effect for multiple images on the same page, we can't point to the same SVG clip path because they would all animated at the same time, which looks ugly and is not what we want.
+
+Thus, after creating the initial version of the clip path in plain SVG to make sure it does what we want it to, we need to create a JavaScript function to generate copies of our SVG so that we can assign each element its own SVG clip path. You can view my function in the JavaScript file <a href="#">on GitHub</a>.
+
+We can then set the background for each element to this unique SVG clip path inside of our <strong>getProgressBarElem</strong> function:
+
+<pre class="brush:js"><code>
+if(type === "ring" // Prevent this from running in Webkit
+       &amp;&amp; supportsSMIL // Prevent this from running in IE
+       &amp;&amp; window.getComputedStyle(elem, null).getPropertyValue("-webkit-clip-path") === ""
+       &amp;&amp; elem.style.clipPath === "") { // If it already has a unique SVG don't make another
+    // Set the clip path to the one dynamically generated
+    var IDNum = createCircleSVG();
+    elem.setAttribute("data-pb-svgid", "circleSVG" + IDNum);
+    elem.style.clipPath = "url(#clipPath" + IDNum + ")";
+}
+</code></pre>
+
+The last thing we have to do is start the animations on the SVG clip path after the image is loaded. So, we do the following:
+
+<pre class="brush:js"><code>
+// Add the completed class when the image is done loading and show the image
+function loadFinished(elem) {
+    // Create a URL for the given response
+    var imgUrl = urlCreator.createObjectURL(req.response);
+    // Set that URL as the background of the element given
+    elem.style.backgroundImage = 'url(' + imgUrl + ')';
+    
+    // Finish the animation
+    progressBarElem.animate(1, function () {
+        // If it needs to use an SVG animation, use it
+        // IE doesn't support SMIL at all, so prevent these lines from running in IE
+        if(elem.getAttribute("data-pb-type") === "ring"
+            &amp;&amp; supportsSMIL &amp;&amp; elem.hasAttribute("data-pb-svgid")) {
+            var circleSVG = document.getElementById(elem.getAttribute("data-pb-svgid"));
+            circleSVG.querySelector("animate").beginElement();
+            circleSVG.querySelectorAll("animate")[1].beginElement();
+        } 
+        
+        // Add the "complete" class to show it's done 
+        elem.classList.add("complete");
+    });
+}
+</code></pre>
+
+<h2>Other notes</h2>
+
+This same type of approach can be used for a rectangular SVG loader using an inset clip path, but apparently Chrome currently crashes when trying to animate inset clip paths. You can find the code to do this in the comments of the SCSS source file, perhaps it will work in the future.
+
+There are couple parts of the JS file that are <strong>only for the demo</strong>. Make sure you remove the click listener (at the bottom of the JavaScript file) and randomly generated path in the following line if you put this on your site! It forces the image to be loaded again, not pull from the cache which is <i>not</i> what you want.
+
+<pre class="brush:js"><code>
+req.open('GET', imgLoc + '?' + Math.random(), true);
+</code></pre>
+
+Also note that there are several IE bug fixes inside of the JavaScript. Perhaps the biggest one is that IE needs to set the <a href="https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/preserveAspectRatio">preserveAspectRatio</a> of our SVG loaders and the value varies depending on the effect we want. You can see where I do this in the lines that look like this example:
+
+<pre class="brush:js"><code>
+elem.svg.setAttribute("preserveAspectRatio", "xMinYMin");
+</code></pre>
+
+Another IE error fix is that the loaders failed to render sometimes. To fix this, I force a very, very subtle background change in the loading function to force a re-render:
+
+<pre class="brush:js"><code>
+// Update the progress bar with the current value
+var toggle = true; 
+function loading(evt) {
+    if (evt.lengthComputable) {
+        progressBarElem.animate(evt.loaded / evt.total);
+        // Force subtle background change to fix an IE rendering issue
+        document.body.style.backgroundColor = toggle ? '#F7F6E2' : '#F7F5E2';
+        toggle = !toggle;
+    }
+}
+</code></pre>
+
+As you can likely tell, there is a great deal of complexity to get this effect working across various browsers. However, as time goes on browsers will support these properties more and more.
+
+I have included some other well supported pure CSS reveal effects in the demos which use essentially the same approach as the diagonal type above. The code to reproduce them is on GitHub with the others. 
+
+If you create other effects using same type of approach please let me know via <a href="https://twitter.com/ZachSaucier">@ZachSaucier</a> on Twitter!

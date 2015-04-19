@@ -1,47 +1,14 @@
 // For more check out zachsaucier.com
 
-var count = 0;
-
 // Detect SMIL animation ability
 var detector = document.createElementNS("http://www.w3.org/2000/svg", "animate"),
-    supportsSMIL = detector.beginElement ? true : false;
-
-function resetCircleAnim(elem) {
-    /* Force the animations to restart */
-    elem.setAttribute("repeatCount", 1);
-    elem.nextElementSibling.setAttribute("repeatCount", 1);
-    if(elem.getAttribute("data-pb-SVGID"))
-        document.getElementById(elem.getAttribute("data-pb-SVGID")).pauseAnimations(); 
-}
-
-var imgElems = document.querySelectorAll(".pb"), // The elements that are the to be used for the image
-    urlCreator = window.URL || window.webkitURL; // For URL creator usage later
+    supportsSMIL = detector.beginElement ? true : false,
+    imgElems = document.querySelectorAll(".pb"), // The elements that are the to be used for the image
+    urlCreator = window.URL || window.webkitURL, // For URL creator usage later
+    count = 0; // Keep track of how many SVGs we've made
     
 // Add the image loading effect for each element
 [].forEach.call(imgElems, loadImage); 
-
-// Show the effect again on click (DEMO USES ONLY)
-[].forEach.call(imgElems, function (elem) {
-    elem.addEventListener("click", function () {
-        if(elem.className.indexOf("complete") > -1) {
-            // Reset the element
-            elem.className = "pb"; 
-            elem.style.backgroundImage = "none";
-            elem.removeChild(elem.querySelector("svg"));
-            
-            // If it's the circle, reset it
-            if(elem.getAttribute("data-pb-type") === "ring") {
-                if(elem.hasAttribute("data-pb-svgid")) {
-                    var circleSVG = document.getElementById(elem.getAttribute("data-pb-SVGID")); 
-                    resetCircleAnim(circleSVG.querySelector("animate"));
-                }
-            } 
-            
-            // Do the effect again
-            loadImage(elem);
-        }  
-    });
-});
 
 // Load the image in the way specified by the data attribute
 function loadImage(elem) {
@@ -82,20 +49,18 @@ function loadImage(elem) {
             return new ProgressBar.Square(elem, {
                 strokeWidth: 10
             });
-        } else if(type === "svg") {
-            var svgPath = document.getElementById(elem.getAttribute("data-pb-svg"));
-            return new ProgressBar.Path(svgPath, {
-                stokeWidth: 5
-            });
-        } else if(type === "ring"
-               && window.getComputedStyle(elem, null).getPropertyValue("-webkit-clip-path") === "") {
-
-            var IDNum = getCircleSVGID();
+        } else if(type === "ring" // Prevent this from running in Webkit
+               && supportsSMIL // Prevent this from running in IE
+               && window.getComputedStyle(elem, null).getPropertyValue("-webkit-clip-path") === ""
+               && elem.style.clipPath === "") { // If it already has a unique SVG don't make another
+            // Set the clip path to the one dynamically generated
+            var IDNum = createCircleSVG();
             elem.setAttribute("data-pb-svgid", "circleSVG" + IDNum);
             elem.style.clipPath = "url(#clipPath" + IDNum + ")";
         } else if (type !== "ring" && type !== "corner-ring") 
             console.log("The given type ", type, " is not valid. Using a circle instead.");
 
+        // IE doesn't support SMIL animations, so we need to fall back
         if(!supportsSMIL) 
             elem.className += " noSMIL";
         
@@ -109,9 +74,10 @@ function loadImage(elem) {
     }
 
     // Update the progress bar with the current value
-    var toggle = true; // this is a terrible name ;) RL
+    var toggle = true; 
     function loading(evt) {
         if (evt.lengthComputable) {
+            // ProgressBar.js animates using 0.0-1.0 as a range, so we need the progress in terms of that
             progressBarElem.animate(evt.loaded / evt.total);
             // Force sublte background change to fix an IE rendering issue
             document.body.style.backgroundColor = toggle ? '#F7F6E2' : '#F7F5E2';
@@ -119,7 +85,7 @@ function loadImage(elem) {
         }
     }
 
-    // Remove the loader when it's done and show the image
+    // Add the completed class when the image is done loading and show the image
     function loadFinished(elem) {
         // Create a URL for the given response
         var imgUrl = urlCreator.createObjectURL(req.response);
@@ -129,14 +95,12 @@ function loadImage(elem) {
         // Finish the animation
         progressBarElem.animate(1, function () {
             // If it needs to use an SVG animation, use it
-            if(elem.getAttribute("data-pb-type") === "ring") {
-                // IE doesn't support SMIL at all, so prevent these lines from running in it
-                if(supportsSMIL && elem.hasAttribute("data-pb-svgid")) {
-                    var circleSVG = document.getElementById(elem.getAttribute("data-pb-svgid"));
-                    circleSVG.querySelector("animate").beginElement();
-                    circleSVG.querySelectorAll("animate")[1].beginElement();
-                    circleSVG.unpauseAnimations(); 
-                }
+            // IE doesn't support SMIL at all, so prevent these lines from running in IE
+            if(elem.getAttribute("data-pb-type") === "ring"
+                && supportsSMIL && elem.hasAttribute("data-pb-svgid")) {
+                var circleSVG = document.getElementById(elem.getAttribute("data-pb-svgid"));
+                circleSVG.querySelector("animate").beginElement();
+                circleSVG.querySelectorAll("animate")[1].beginElement();
             } 
             
             // Add the "complete" class to show it's done 
@@ -145,7 +109,7 @@ function loadImage(elem) {
     }
 }
 
-function getCircleSVGID() {
+function createCircleSVG() {
     // Create the SVG element and set its attributes
     var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttributeNS(null,'width', '0');
@@ -166,7 +130,6 @@ function getCircleSVGID() {
 
     var anim1 = document.createElementNS("http://www.w3.org/2000/svg", "animate");
     anim1.setAttribute("attributeName" , "rx");
-    anim1.setAttribute("begin" , "indefinite");
     anim1.setAttribute("from" , "0.074");
     anim1.setAttribute("to" , "1.5");
     anim1.setAttribute("dur" , "1.5s");
@@ -174,7 +137,6 @@ function getCircleSVGID() {
 
     var anim2 = document.createElementNS("http://www.w3.org/2000/svg", "animate");
     anim2.setAttribute("attributeName" , "ry");
-    anim2.setAttribute("begin" , "indefinite");
     anim2.setAttribute("from" , "0.111");
     anim2.setAttribute("to" , "2.25");
     anim2.setAttribute("dur" , "1.5s");
@@ -190,11 +152,23 @@ function getCircleSVGID() {
 
     svg.appendChild(defs);
 
-    // Pause the animations so we can see them later
-    svg.pauseAnimations();
-
     document.body.appendChild(svg);
 
     // Return the number in the ID for reference
     return count++;
 }
+
+// Show the effect again on click (DEMO USES ONLY)
+[].forEach.call(imgElems, function (elem) {
+    elem.addEventListener("click", function () {
+        if(elem.className.indexOf("complete") > -1) {
+            // Reset the element
+            elem.className = "pb"; 
+            elem.style.backgroundImage = "none";
+            elem.removeChild(elem.querySelector("svg"));
+            
+            // Do the effect again
+            loadImage(elem);
+        }  
+    });
+});
