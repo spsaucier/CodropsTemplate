@@ -1,1 +1,280 @@
-/* Component styles */
+body {
+  margin: 0;
+  background-color: #F7F6E2;
+}
+
+.pb {
+  /* This sizes each image to make the width 1.5 times bigger than the hegiht. 
+     If changed, the positioning some sub elements will need to be changed as well. */
+  height: 0;
+  padding-bottom: 66%;
+  /* This part is for the effect itself */
+  background-size: cover;
+  position: relative;
+  overflow: hidden;
+  /* Add some background color to differentiate between each */
+  /* Add a default fade in for every effect */
+  /* Make sure any SVG or ::before elements are above ::after elements */
+  /* Remove the default fade for the ring loader */
+  /* Change a few things for the square loader */
+  /* The diagonal loader */
+  /* Setup the basics for the other line loaders */
+  /* Setup the completed state for the other line loaders */
+  /* The "flat" loader which gives a "background" to the loader */
+  /* Style the fullsize line loader */
+  /* Styling the corner ring loader */
+}
+.pb:nth-of-type(odd) {
+  color: #fdfcf6;
+  background-color: currentColor;
+}
+.pb:nth-of-type(even) {
+  color: white;
+  background-color: currentColor;
+}
+.pb::after {
+  z-index: 0;
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: inherit;
+}
+.pb.complete::after {
+  opacity: 0;
+  transition: 1s;
+}
+.pb > svg, .pb::before {
+  z-index: 1;
+}
+.pb[data-pb-type="ring"]:not(.noSMIL)::after {
+  display: none;
+}
+.pb[data-pb-type="ring"], .pb[data-pb-type="square"] {
+  /* Use clip path to hide the part of the background so we can animate it in later */
+  /* FF uses an SVG with SMIL animation added by JS because this is unsupported */
+  -webkit-clip-path: circle(8.6% at center);
+  clip-path: circle(8.6% at center);
+  /* Hide the image before it's supposed to show */
+  background-size: 0;
+  /* This is the inner circle */
+  /* Position our loader */
+  /* For the completed state of the ring */
+}
+.pb[data-pb-type="ring"]::before, .pb[data-pb-type="square"]::before {
+  content: '';
+  background-color: currentColor;
+  border-radius: 50%;
+  /* If the size of the parent is changed, this will need to be changed as well */
+  height: 18.1%;
+  width: 12%;
+  position: absolute;
+  top: 41%;
+  left: 44%;
+}
+.pb[data-pb-type="ring"] > svg, .pb[data-pb-type="square"] > svg {
+  /* If the size of the parent is changed, this will need to be changed as well */
+  height: 22.5%;
+  width: 15%;
+  position: absolute;
+  top: 38.75%;
+  /* 100% - height / 2 */
+  left: 42.5%;
+  /* 100% - height * (2 * 1/3) because the height is 2/3 of the width in this case (OR 100% - width / 2) */
+  /* Set the stroke of the path to our secondary color */
+}
+.pb[data-pb-type="ring"] > svg path, .pb[data-pb-type="square"] > svg path {
+  stroke: #969696;
+}
+.pb[data-pb-type="ring"].complete, .pb[data-pb-type="square"].complete {
+  /* Remove the clip path using a transition */
+  -webkit-clip-path: circle(100% at center);
+  clip-path: circle(100% at center);
+  transition: 1s 0.5s ease-in-out;
+  /* Make the background visible since it's done loading */
+  background-size: cover;
+  /* Scale down the inner circle */
+  /* Fade out the SVG ring */
+}
+.pb[data-pb-type="ring"].complete::before, .pb[data-pb-type="square"].complete::before {
+  -webkit-transform: scale(0);
+  transform: scale(0);
+  transition: transform 0.5s 0.5s ease-in-out;
+}
+.pb[data-pb-type="ring"].complete > svg, .pb[data-pb-type="square"].complete > svg {
+  transition: opacity 0.5s ease-in;
+  opacity: 0;
+}
+.pb[data-pb-type="square"], .pb[data-pb-type="square"].complete {
+  /* In a perfect world we could use this, but it crashes Chrome :(
+  -webkit-clip-path:inset(38.5% 42.5% 38.5% 42.5%);
+  clip-path:inset(38.5% 42.5% 38.5% 42.5%);
+  */
+  /* Instead we're going to remove the clip path and use the default fade in instead */
+  -webkit-clip-path: none;
+  clip-path: none;
+  /* Remove the border radius from before */
+}
+.pb[data-pb-type="square"]::before, .pb[data-pb-type="square"].complete::before {
+  border-radius: 0;
+  transition: 0.5s ease-in-out;
+}
+.pb[data-pb-type="square"].complete, .pb[data-pb-type="square"].complete.complete {
+  /* Theoretically, this should work, but Chrome currently breaks if it's used...
+  -webkit-clip-path:inset(0%);
+  clip-path:inset(0%);
+  */
+}
+.pb[data-pb-type="diagonal"] {
+  /* Position the SVG loader diagonally */
+  /* Create each half to be separated in the animation */
+  /* Position the left side */
+  /* Position the right side */
+  /* Set the complete state for each part */
+}
+.pb[data-pb-type="diagonal"] > svg {
+  position: absolute;
+  top: 50%;
+  width: 125%;
+  -webkit-transform: translate(-10%, -50%) rotate(-33.333deg);
+  transform: translate(-10%, -50%) rotate(-33.333deg);
+}
+.pb[data-pb-type="diagonal"]::after, .pb[data-pb-type="diagonal"]::before {
+  content: "";
+  width: 125%;
+  height: 100%;
+  position: absolute;
+  background: currentColor;
+}
+.pb[data-pb-type="diagonal"]::before {
+  -webkit-transform-origin: bottom left;
+  transform-origin: bottom left;
+  -webkit-transform: rotate(-33.333deg);
+  transform: rotate(-33.333deg);
+}
+.pb[data-pb-type="diagonal"]::after {
+  right: 0;
+  -webkit-transform-origin: top right;
+  transform-origin: top right;
+  -webkit-transform: rotate(-33.333deg);
+  transform: rotate(-33.333deg);
+}
+.pb[data-pb-type="diagonal"].complete {
+  /* Fade out the SVG */
+  /* Slide out both sides */
+}
+.pb[data-pb-type="diagonal"].complete > svg {
+  transition: 0.25s;
+  opacity: 0;
+}
+.pb[data-pb-type="diagonal"].complete::before {
+  transition: 1s;
+  -webkit-transform: rotate(-33.333deg) translateY(-100%);
+  transform: rotate(-33.333deg) translateY(-100%);
+}
+.pb[data-pb-type="diagonal"].complete::after {
+  opacity: 1;
+  transition: 1s;
+  -webkit-transform: rotate(-33.333deg) translateY(100%);
+  transform: rotate(-33.333deg) translateY(100%);
+}
+.pb[data-pb-type="line-top"] > svg, .pb[data-pb-type="line-flat-top"] > svg, .pb[data-pb-type="fill-left"] > svg {
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+.pb[data-pb-type="line-top"] > svg path, .pb[data-pb-type="line-flat-top"] > svg path, .pb[data-pb-type="fill-left"] > svg path {
+  stroke: #ED4E6E;
+}
+.pb[data-pb-type="line-top"], .pb[data-pb-type="line-flat-top"] {
+  /* For the completed state */
+}
+.pb[data-pb-type="line-top"].complete > svg, .pb[data-pb-type="line-top"].complete::before, .pb[data-pb-type="line-flat-top"].complete > svg, .pb[data-pb-type="line-flat-top"].complete::before {
+  transition: 0.5s;
+  transform: translateY(-100%);
+}
+.pb[data-pb-type="line-top"].complete > svg path, .pb[data-pb-type="line-top"].complete::before path, .pb[data-pb-type="line-flat-top"].complete > svg path, .pb[data-pb-type="line-flat-top"].complete::before path {
+  transition: 0.5s;
+}
+.pb[data-pb-type="line-flat-top"] {
+  /* Set the height of the lines */
+  /* Style the "background" of the loader */
+}
+.pb[data-pb-type="line-flat-top"] > svg {
+  height: 7%;
+}
+.pb[data-pb-type="line-flat-top"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  height: 7%;
+  width: 100%;
+  background: #969696;
+}
+.pb[data-pb-type="fill-left"] {
+  /* Make the background color be removed immediately */
+  /* Fade out the loader */
+}
+.pb[data-pb-type="fill-left"] > svg {
+  height: 100%;
+  /* Make it partially see through to keep context of what's beneath it */
+  opacity: .9;
+}
+.pb[data-pb-type="fill-left"] > svg path {
+  stroke: #969696;
+}
+.pb[data-pb-type="fill-left"].complete::after {
+  transition: 0;
+}
+.pb[data-pb-type="fill-left"].complete > svg {
+  transition: 0.5s;
+  opacity: 0;
+}
+.pb[data-pb-type="corner-ring"] {
+  /* Position the "triangle" */
+  /* Put the loader inside of the "triangle" */
+  /* Slide both components out when the image is loaded */
+}
+.pb[data-pb-type="corner-ring"]::before {
+  content: "";
+  width: 300px;
+  height: 150px;
+  background: #ED4E6E;
+  position: absolute;
+  top: 0;
+  right: 0;
+  -webkit-transform-origin: top center;
+  transform-origin: top center;
+  -webkit-transform: translateX(50%) rotate(45deg);
+  transform: translateX(50%) rotate(45deg);
+}
+.pb[data-pb-type="corner-ring"] > svg {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 100px;
+}
+.pb[data-pb-type="corner-ring"].complete > svg {
+  -webkit-transform: translate(110%, -110%);
+  transform: translate(110%, -110%);
+  transition: 0.5s;
+}
+.pb[data-pb-type="corner-ring"].complete::before {
+  transition: 0.5s;
+  -webkit-transform: translate(125%) rotate(45deg);
+  transform: translate(125%) rotate(45deg);
+}
+
+.clip-container:nth-of-type(even) {
+  color: #fdfcf6;
+  background-color: currentColor;
+}
+.clip-container:nth-of-type(odd) {
+  color: white;
+  background-color: currentColor;
+}
+.clip-container .pb:nth-of-type(odd),
+.clip-container .pb:nth-of-type(even) {
+  color: inherit;
+}

@@ -1,6 +1,39 @@
 <!-- Main image 580x315 (optional) -->
 
-If you are writing the article directly in WordPress, please use the "text" editor in WordPress instead of the "visual" one, especially if you are planning to write code.
+Today we will be showing the loading of large images and animating them in once they finish loading.
+
+In order to show this loading, we will have to make <a href="#">XHR requests</a> for the images instead of loading them using an img element or as a background. We will also be using <a href="https://github.com/kimmobrunfeldt/progressbar.js">ProgressBar.js</a> to make creating and animating the loaders easier.
+
+<div class="box-attention">
+	<strong>Attention:</strong> Please keep in mind some of these effects are <strong>highly experimental</strong> and only supported by some modern browsers. Chrome seems to have the best performance for them as of now, FireFox performs the next best.
+</div>
+
+The basic structure of the code is simple. We just need to create some elements, styling them however we want the final images to look, give them all a common class, and then give each a couple custom <a href="#">data-attributes</a> to make them they way we want them. 
+
+The basic image element we'll use is one that looks like the one below. The data-pb-type attribute will be used to determine which loader to use and the data-pb-src will be the image URL for that image.
+
+<pre class="brush:html"><code>
+&lt;div class="pb" data-pb-type="diagonal" data-pb-src="/img/url.jpg"&gt;
+</code></pre>
+
+The first demo is based on <a href="https://twitter.com/michaelvillar">Michaël Villar's</a> work that can be <a href="http://michaelvillar.s3.amazonaws.com/motion/08-photo-loading/photo-loading.mp4">seen here</a>. This demo makes use of the CSS' <a href="#">clip-path</a> property, which is only supported in Webkit browsers currently. For Firefox we fall back to an SVG <a href="#">SMIL animation</a> and for Internet Explorer we fall back to a plain fade in because it doesn't support either method.
+
+First off, we need to size the images and do some other setup. Since I want them to maintain their original aspect ratio of 3:2 and be fully responsive, I'm going to use something I call [the height:0 padding trick](http://stackoverflow.com/a/11017480/2065702). We also want the image to take up the whole space, so we'll have background-size:cover. The other thing I'll add is a default fade to be used when the .complete class is added.
+
+Note that I'm using <a href="#">SCSS</a> to make some of our work easier.
+
+<pre class="brush:scss"><code>
+.pb {
+  /* This sizes each image to make the width 1.5 times bigger than the hegiht. 
+     If changed, the positioning some sub elements will need to be changed as well. */
+  height:0;
+  padding-bottom:66%;
+  
+  /* This part is for the effect itself */
+  background-size:cover;
+  position:relative;
+  overflow:hidden;
+</code></pre>
 
 <h2>Section headline</h2>
 
